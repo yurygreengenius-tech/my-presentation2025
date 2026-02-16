@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд Биогазовых Комплексов 2025</title>
+    
+    <!-- Tailwind CSS (Стили) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM (Основные библиотеки с отказоустойчивого CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+    
+    <!-- Babel (Для работы логики приложения) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.17/babel.min.js" crossorigin="anonymous"></script>
+
+    <style>
+        /* Увеличенный базовый шрифт */
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: 16px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        /* Анимация загрузки */
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #10b981;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <div id="root">
+        <div class="flex flex-col items-center justify-center h-screen">
+            <div class="loader"></div>
+            <p class="text-slate-600 mt-6 text-lg font-semibold" id="loading-text">Загрузка аналитики...</p>
+        </div>
+    </div>
+
+    <!-- Встроенная защита от ошибок компиляции -->
+    <script>
+        window.addEventListener('error', function(e) {
+            var loaderText = document.getElementById('loading-text');
+            if (loaderText) {
+                loaderText.innerHTML = '<span style="color:red; font-size: 18px;">Ошибка запуска. Проверьте консоль браузера.</span>';
+            }
+        });
+    </script>
+
+    <script type="text/babel">
+        // Заглушка process для Babel
+        if (typeof window !== 'undefined' && !window.process) {
+            window.process = { env: { NODE_ENV: 'production' } };
+        }
+
+        const { useState } = React;
+
+        // --- ВСТРОЕННЫЕ ИКОНКИ (Увеличенные) ---
+        const Icon = ({ path, className = "w-6 h-6" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const LayoutDashboard = (props) => <Icon {...props} path={<g><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></g>} />;
+        const Zap = (props) => <Icon {...props} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />;
+        const TrendingUp = (props) => <Icon {...props} path={<g><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></g>} />;
+        const DollarSign = (props) => <Icon {...props} path={<g><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></g>} />;
+        const Activity = (props) => <Icon {...props} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>} />;
+        const AlertTriangle = (props) => <Icon {...props} path={<g><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></g>} />;
+        const ArrowUpRight = (props) => <Icon {...props} path={<g><path d="M7 7h10v10"/><path d="M7 17 17 7"/></g>} />;
+        const ArrowDownRight = (props) => <Icon {...props} path={<g><path d="m7 7 10 10"/><path d="M17 7v10H7"/></g>} />;
+        const Factory = (props) => <Icon {...props} path={<g><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><line x1="17" x2="17" y1="13" y2="13"/><line x1="12" x2="12" y1="13" y2="13"/><line x1="7" x2="7" y1="13" y2="13"/></g>} />;
+        const Truck = (props) => <Icon {...props} path={<g><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/><path d="M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></g>} />;
+        const Wrench = (props) => <Icon {...props} path={<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>} />;
+        const FileText = (props) => <Icon {...props} path={<g><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></g>} />;
+
+        const COLORS = {
+            fot: '#4ade80', trans: '#fbbf24', eng: '#f87171', other: '#cbd5e1',
+            infra: '#a78bfa', chem: '#60a5fa', admin: '#9ca3af', fuel: '#f472b6'
+        };
+
+        // Вспомогательная функция сортировки массивов затрат
+        const sortCosts = (arr) => arr.sort((a, b) => b.value - a.value).filter(i => i.value > 0);
+
+        // --- ДАННЫЕ ИЗ ОТЧЕТА ---
+        const portfolioData = {
+          summary: {
+            generation: { 2024: 77118200, 2025: 80345800, change: "+4.18%" },
+            export: { 2024: 69184035, 2025: 72532276, change: "+4.84%" },
+            revenue: { 2024: 3784738, 2025: 4938365, change: "+30.48%" },
+            expenses: { 2024: 3448497, 2025: 3959845, change: "+14.83%" },
+            netProfit: { 2024: 336240, 2025: 978519, change: "+191.02%" },
+            parasiticLoad: { 2024: 10.28, 2025: 9.72, change: "-0.56 п.п." },
+            lcoe: { 2024: 0.0498, 2025: 0.0546, change: "+9.64%" },
+            avgPrice: { 2024: 0.0547, 2025: 0.0680, change: "+24.31%" }
+          },
+          costStructure2025: sortCosts([
+            { name: 'Персонал (ФОТ)', value: 1061512, color: COLORS.fot },
+            { name: 'Транспорт сырья', value: 749352, color: COLORS.trans },
+            { name: 'Обслуживание двигателей', value: 597830, color: COLORS.eng },
+            { name: 'Прочее', value: 549992, color: COLORS.other },
+            { name: 'Инфраструктура', value: 434636, color: COLORS.infra },
+            { name: 'Химия (FeCl3)', value: 246875, color: COLORS.chem },
+            { name: 'Админ. расходы', value: 175437, color: COLORS.admin },
+            { name: 'Топливо', value: 144211, color: COLORS.fuel }
+          ]),
+          plants: [
+            {
+              id: 'belovezha', name: 'Беловежа', status: 'success', tagline: 'Лидер оптимизации затрат',
+              metrics: { gen: { 2024: 8047400, 2025: 7955500 }, rev: { 2024: 340147, 2025: 415972 }, exp: { 2024: 387465, 2025: 249679 }, profit: { 2024: -47318, 2025: 166292 }, lcoe: { 2024: 0.0531, 2025: 0.0345 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 100000, color: COLORS.fot }, { name: 'Инфраструктура', value: 60000, color: COLORS.infra },
+                { name: 'Химия (FeCl3)', value: 30000, color: COLORS.chem }, { name: 'Прочее', value: 24679, color: COLORS.other },
+                { name: 'Админ. расходы', value: 20000, color: COLORS.admin }, { name: 'Топливо', value: 10000, color: COLORS.fuel },
+                { name: 'Обслуживание двигателей', value: 5000, color: COLORS.eng }, { name: 'Транспорт сырья', value: 0, color: COLORS.trans }
+              ]),
+              insights: ["Масштабное сокращение расходов (-35.56%) благодаря отсутствию ремонтов двигателя в 2025 году.", "Идеальная логистика: транспортные расходы = 0 (станция на территории фермы).", "Самый низкий LCOE в портфеле ($0.0345)."]
+            },
+            {
+              id: 'bg17', name: 'БГ-17', status: 'success', tagline: 'Масштаб и рост выручки',
+              metrics: { gen: { 2024: 14011000, 2025: 16743200 }, rev: { 2024: 602544, 2025: 904946 }, exp: { 2024: 530080, 2025: 517246 }, profit: { 2024: 72463, 2025: 387699 }, lcoe: { 2024: 0.0424, 2025: 0.0341 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 180000, color: COLORS.fot }, { name: 'Транспорт сырья', value: 104000, color: COLORS.trans },
+                { name: 'Инфраструктура', value: 80000, color: COLORS.infra }, { name: 'Химия (FeCl3)', value: 50000, color: COLORS.chem },
+                { name: 'Прочее', value: 33246, color: COLORS.other }, { name: 'Админ. расходы', value: 30000, color: COLORS.admin },
+                { name: 'Обслуживание двигателей', value: 20000, color: COLORS.eng }, { name: 'Топливо', value: 20000, color: COLORS.fuel }
+              ]),
+              insights: ["Рост генерации на 19.5% обеспечил скачок выручки на 50%.", "Снижение затрат на двигатель (-86%) компенсировало появление логистических расходов.", "Появление расходов на транспорт сырья ($104k) указывает на расширение радиуса сбора."]
+            },
+            {
+              id: 'mir', name: 'Мир', status: 'danger', tagline: 'Амортизационный шок',
+              metrics: { gen: { 2024: 16555400, 2025: 16722400 }, rev: { 2024: 709369, 2025: 900695 }, exp: { 2024: 597613, 2025: 1188534 }, profit: { 2024: 111755, 2025: -287839 }, lcoe: { 2024: 0.0400, 2025: 0.0789 } },
+              costStructure2025: sortCosts([
+                { name: 'Обслуживание двигателей', value: 529000, color: COLORS.eng }, { name: 'Персонал (ФОТ)', value: 200000, color: COLORS.fot },
+                { name: 'Транспорт сырья', value: 150000, color: COLORS.trans }, { name: 'Инфраструктура', value: 100000, color: COLORS.infra },
+                { name: 'Прочее', value: 79534, color: COLORS.other }, { name: 'Химия (FeCl3)', value: 60000, color: COLORS.chem },
+                { name: 'Админ. расходы', value: 40000, color: COLORS.admin }, { name: 'Топливо', value: 30000, color: COLORS.fuel }
+              ]),
+              insights: ["Убыток вызван разовым капитальным ремонтом двигателя ($529k).", "Базовая биологическая модель остается прибыльной (LCOE без ремонта ~$0.0437).", "Самая высокая генерация в портфеле (16.72 ГВт·ч)."]
+            },
+            {
+              id: 'kabylovka', name: 'Кабыловка', status: 'warning', tagline: 'Уязвимость логистики',
+              metrics: { gen: { 2024: 8581000, 2025: 8407100 }, rev: { 2024: 482867, 2025: 595581 }, exp: { 2024: 368810, 2025: 498452 }, profit: { 2024: 114056, 2025: 97128 }, lcoe: { 2024: 0.0474, 2025: 0.0646 } },
+              costStructure2025: sortCosts([
+                { name: 'Транспорт сырья', value: 160000, color: COLORS.trans }, { name: 'Персонал (ФОТ)', value: 130000, color: COLORS.fot },
+                { name: 'Инфраструктура', value: 60000, color: COLORS.infra }, { name: 'Топливо', value: 40000, color: COLORS.fuel },
+                { name: 'Обслуживание двигателей', value: 40000, color: COLORS.eng }, { name: 'Химия (FeCl3)', value: 30000, color: COLORS.chem },
+                { name: 'Админ. расходы', value: 20000, color: COLORS.admin }, { name: 'Прочее', value: 18452, color: COLORS.other }
+              ]),
+              insights: ["Рост расходов на транспорт сырья (+66%) и топливо (+65%).", "Снижение чистой прибыли несмотря на рост выручки.", "Необходима оптимизация радиуса поставок сырья."]
+            },
+            {
+              id: 'severny', name: 'Северный', status: 'success', tagline: 'Эталон стабильности',
+              metrics: { gen: { 2024: 8574200, 2025: 8579100 }, rev: { 2024: 488442, 2025: 599227 }, exp: { 2024: 294341, 2025: 314901 }, profit: { 2024: 194100, 2025: 284325 }, lcoe: { 2024: 0.0375, 2025: 0.0405 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 140000, color: COLORS.fot }, { name: 'Инфраструктура', value: 50000, color: COLORS.infra },
+                { name: 'Обслуживание двигателей', value: 30000, color: COLORS.eng }, { name: 'Химия (FeCl3)', value: 30000, color: COLORS.chem },
+                { name: 'Транспорт сырья', value: 20000, color: COLORS.trans }, { name: 'Админ. расходы', value: 20000, color: COLORS.admin },
+                { name: 'Прочее', value: 14901, color: COLORS.other }, { name: 'Топливо', value: 10000, color: COLORS.fuel }
+              ]),
+              insights: ["Высокая рентабельность благодаря низким затратам на логистику.", "Стабильная генерация (+0.05% г/г).", "Снижение затрат на двигатель на 51%."]
+            },
+            {
+              id: 'bochka', name: 'Бочка', status: 'warning', tagline: 'Биологические вызовы',
+              metrics: { gen: { 2024: 6505600, 2025: 6291200 }, rev: { 2024: 345107, 2025: 440732 }, exp: { 2024: 413590, 2025: 389458 }, profit: { 2024: -68483, 2025: 51273 }, lcoe: { 2024: 0.0736, 2025: 0.0706 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 110000, color: COLORS.fot }, { name: 'Транспорт сырья', value: 80000, color: COLORS.trans },
+                { name: 'Обслуживание двигателей', value: 60000, color: COLORS.eng }, { name: 'Инфраструктура', value: 50000, color: COLORS.infra },
+                { name: 'Прочее', value: 40000, color: COLORS.other }, { name: 'Химия (FeCl3)', value: 20000, color: COLORS.chem },
+                { name: 'Админ. расходы', value: 15000, color: COLORS.admin }, { name: 'Топливо', value: 14458, color: COLORS.fuel }
+              ]),
+              insights: ["Генерация лишь 71.8% от плана (проблемы с биологией).", "Аномальный скачок 'Прочих расходов' до $40k (штрафы/консалтинг?).", "Выход в прибыль только за счет роста тарифов."]
+            },
+            {
+              id: 'selishche', name: 'Селище', status: 'success', tagline: 'Восстановление',
+              metrics: { gen: { 2024: 6457100, 2025: 7135500 }, rev: { 2024: 344307, 2025: 483355 }, exp: { 2024: 349090, 2025: 376053 }, profit: { 2024: -4783, 2025: 107301 }, lcoe: { 2024: 0.0627, 2025: 0.0592 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 100000, color: COLORS.fot }, { name: 'Транспорт сырья', value: 70000, color: COLORS.trans },
+                { name: 'Инфраструктура', value: 60000, color: COLORS.infra }, { name: 'Обслуживание двигателей', value: 50000, color: COLORS.eng },
+                { name: 'Прочее', value: 40000, color: COLORS.other }, { name: 'Химия (FeCl3)', value: 25000, color: COLORS.chem },
+                { name: 'Админ. расходы', value: 20000, color: COLORS.admin }, { name: 'Топливо', value: 11053, color: COLORS.fuel }
+              ]),
+              insights: ["Снижение собственных нужд (-11.5%) увеличило экспорт в сеть.", "Рост генерации на 10.5%.", "Как и на 'Бочке', присутствуют аномальные 'Прочие расходы' ($40k)."]
+            },
+            {
+              id: 'zadneprovsky', name: 'Заднепровский', status: 'success', tagline: 'Сжатие OPEX',
+              metrics: { gen: { 2024: 8386500, 2025: 8511800 }, rev: { 2024: 471955, 2025: 597857 }, exp: { 2024: 507504, 2025: 425519 }, profit: { 2024: -35549, 2025: 172337 }, lcoe: { 2024: 0.0667, 2025: 0.0550 } },
+              costStructure2025: sortCosts([
+                { name: 'Персонал (ФОТ)', value: 130000, color: COLORS.fot }, { name: 'Транспорт сырья', value: 120000, color: COLORS.trans },
+                { name: 'Инфраструктура', value: 70000, color: COLORS.infra }, { name: 'Химия (FeCl3)', value: 40000, color: COLORS.chem },
+                { name: 'Админ. расходы', value: 30000, color: COLORS.admin }, { name: 'Топливо', value: 18000, color: COLORS.fuel },
+                { name: 'Прочее', value: 10019, color: COLORS.other }, { name: 'Обслуживание двигателей', value: 7500, color: COLORS.eng }
+              ]),
+              insights: ["Сокращение общих расходов на 16% при росте выручки.", "Затраты на двигатель упали с $130k до $7.5k.", "Успешный разворот от убытка к прибыли."]
+            }
+          ]
+        };
+
+        // --- ГРАФИЧЕСКИЕ КОМПОНЕНТЫ ---
+        
+        const ProfitabilityChart = ({ data }) => {
+            const valuesArray = data.reduce((acc, d) => { acc.push(d.profit2024, d.profit2025, 0); return acc; }, []);
+            const maxVal = Math.max(...valuesArray);
+            const minVal = Math.min(...valuesArray);
+            const range = (maxVal - minVal) || 1;
+            const zeroLine = minVal < 0 ? (Math.abs(minVal) / range) * 100 : 0;
+
+            return (
+                <div className="flex h-full items-end justify-around relative pt-10 pb-12 border-b border-slate-200 mt-6">
+                    <div className="absolute w-full border-t border-slate-300 z-0" style={{ bottom: `${zeroLine}%` }}></div>
+                    
+                    {data.map((item, i) => (
+                        <div key={i} className="relative h-full flex items-end gap-[4px] md:gap-2 group w-[12%] justify-center z-10">
+                            {/* Тултип */}
+                            <div className="hidden group-hover:block absolute -top-20 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-3 rounded-lg whitespace-nowrap z-20 shadow-xl border border-slate-700">
+                                <p className="font-bold mb-1 text-base">{item.name}</p>
+                                <p className="text-slate-300">2024: <span className="text-white font-semibold">${(item.profit2024/1000).toFixed(0)}k</span></p>
+                                <p className="text-emerald-400">2025: <span className="text-white font-semibold">${(item.profit2025/1000).toFixed(0)}k</span></p>
+                            </div>
+
+                            <div className="w-4 md:w-6 lg:w-10 relative" style={{ height: '100%' }}>
+                                <div className="absolute w-full rounded-sm transition-all shadow-sm"
+                                     style={{
+                                         height: `${(Math.abs(item.profit2024) / range) * 100}%`,
+                                         bottom: item.profit2024 >= 0 ? `${zeroLine}%` : 'auto',
+                                         top: item.profit2024 < 0 ? `${100 - zeroLine}%` : 'auto',
+                                         backgroundColor: item.profit2024 < 0 ? '#fca5a5' : '#94a3b8'
+                                     }}></div>
+                            </div>
+                            <div className="w-4 md:w-6 lg:w-10 relative" style={{ height: '100%' }}>
+                                <div className="absolute w-full rounded-sm transition-all shadow-sm"
+                                     style={{
+                                         height: `${(Math.abs(item.profit2025) / range) * 100}%`,
+                                         bottom: item.profit2025 >= 0 ? `${zeroLine}%` : 'auto',
+                                         top: item.profit2025 < 0 ? `${100 - zeroLine}%` : 'auto',
+                                         backgroundColor: item.profit2025 < 0 ? '#ef4444' : '#10b981'
+                                     }}></div>
+                            </div>
+                            <div className="absolute -bottom-10 text-xs md:text-sm text-slate-600 text-center w-24 transform -translate-x-1/2 left-1/2 font-semibold">
+                                {item.name}
+                            </div>
+                        </div>
+                    ))}
+                    <div className="absolute top-0 right-0 flex gap-6 text-sm">
+                        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-slate-400 rounded-sm"></div>2024</div>
+                        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-emerald-500 rounded-sm"></div>2025</div>
+                    </div>
+                </div>
+            )
+        };
+
+        const BarChart2425 = ({ data }) => {
+            const valuesArray = data.reduce((acc, d) => { acc.push(d['2024'], d['2025'], 0); return acc; }, []);
+            const maxVal = Math.max(...valuesArray);
+            const minVal = Math.min(...valuesArray);
+            const range = (maxVal - minVal) || 1;
+            const zeroLine = minVal < 0 ? (Math.abs(minVal) / range) * 100 : 0;
+
+            return (
+                <div className="flex h-full items-end justify-around relative pt-10 pb-12 border-b border-slate-200 mt-6">
+                     {minVal < 0 && <div className="absolute w-full border-t border-slate-300 z-0" style={{ bottom: `${zeroLine}%` }}></div>}
+                     
+                     {data.map((item, i) => (
+                        <div key={i} className="relative h-full flex items-end gap-3 group w-1/3 justify-center z-10">
+                            <div className="hidden group-hover:block absolute -top-20 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-sm px-4 py-3 rounded-lg whitespace-nowrap z-20 shadow-xl border border-slate-700">
+                                <p className="font-bold mb-1 text-base">{item.name}</p>
+                                <p className="text-slate-300">2024: <span className="text-white">${item['2024'].toLocaleString()}</span></p>
+                                <p className="text-blue-300">2025: <span className="text-white">${item['2025'].toLocaleString()}</span></p>
+                            </div>
+
+                            <div className="w-12 lg:w-20 xl:w-24 relative" style={{ height: '100%' }}>
+                                <div className="absolute w-full rounded-sm transition-all shadow-sm flex flex-col justify-end items-center pb-2"
+                                     style={{
+                                         height: `${(Math.abs(item['2024']) / range) * 100}%`,
+                                         bottom: item['2024'] >= 0 ? `${zeroLine}%` : 'auto',
+                                         top: item['2024'] < 0 ? `${100 - zeroLine}%` : 'auto',
+                                         backgroundColor: item['2024'] < 0 ? '#fca5a5' : '#94a3b8'
+                                     }}>
+                                     {item['2024'] >= 0 && (Math.abs(item['2024']) / range) > 0.1 && <span className="text-xs font-bold text-white block mb-1 drop-shadow-md">${(item['2024']/1000).toFixed(0)}k</span>}
+                                </div>
+                            </div>
+                            <div className="w-12 lg:w-20 xl:w-24 relative" style={{ height: '100%' }}>
+                                <div className="absolute w-full rounded-sm transition-all shadow-sm flex flex-col justify-end items-center pb-2"
+                                     style={{
+                                         height: `${(Math.abs(item['2025']) / range) * 100}%`,
+                                         bottom: item['2025'] >= 0 ? `${zeroLine}%` : 'auto',
+                                         top: item['2025'] < 0 ? `${100 - zeroLine}%` : 'auto',
+                                         backgroundColor: item['2025'] < 0 ? '#ef4444' : '#3b82f6'
+                                     }}>
+                                     {item['2025'] >= 0 && (Math.abs(item['2025']) / range) > 0.1 && <span className="text-xs font-bold text-white block mb-1 drop-shadow-md">${(item['2025']/1000).toFixed(0)}k</span>}
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-10 text-sm font-bold text-slate-700 text-center w-full">
+                                {item.name}
+                            </div>
+                        </div>
+                    ))}
+                    <div className="absolute top-0 right-0 flex gap-6 text-sm">
+                        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-slate-400 rounded-sm"></div>2024</div>
+                        <div className="flex items-center gap-2"><div className="w-4 h-4 bg-blue-500 rounded-sm"></div>2025</div>
+                    </div>
+                </div>
+            )
+        };
+
+        const CostStructureBars = ({ data, totalValue }) => {
+            const total = totalValue || data.reduce((sum, item) => sum + item.value, 0);
+            return (
+                <div className="space-y-5 mt-6 w-full h-full overflow-y-auto custom-scrollbar pr-2">
+                    {data.map((item, idx) => {
+                        const pct = (item.value / total) * 100;
+                        return (
+                            <div key={idx} className="w-full">
+                                <div className="flex justify-between text-sm mb-2">
+                                    <div className="flex items-center gap-3 font-semibold text-slate-700">
+                                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: item.color}}></div>
+                                        <span>{item.name}</span>
+                                    </div>
+                                    <span className="font-bold text-slate-900">
+                                        ${(item.value/1000).toFixed(0)}k <span className="text-slate-500 font-normal ml-1">({pct.toFixed(1)}%)</span>
+                                    </span>
+                                </div>
+                                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                                    <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%`, backgroundColor: item.color }}></div>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            )
+        };
+
+        // --- ВЬЮХИ ---
+
+        const ConsolidatedView = () => {
+            const sum = portfolioData.summary;
+            const portfolioChartData = [
+                { name: 'Общая Выручка', '2024': sum.revenue[2024], '2025': sum.revenue[2025] },
+                { name: 'Общий OPEX', '2024': sum.expenses[2024], '2025': sum.expenses[2025] },
+                { name: 'Чистая Прибыль', '2024': sum.netProfit[2024], '2025': sum.netProfit[2025] },
+            ];
+
+            const finMetrics = [
+                { label: 'Выручка ($)', v24: sum.revenue[2024], v25: sum.revenue[2025], change: sum.revenue.change, format: v => `$${v.toLocaleString()}` },
+                { label: 'Операционные затраты (OPEX) ($)', v24: sum.expenses[2024], v25: sum.expenses[2025], change: sum.expenses.change, format: v => `$${v.toLocaleString()}` },
+                { label: 'Чистая прибыль / EBITDA ($)', v24: sum.netProfit[2024], v25: sum.netProfit[2025], change: sum.netProfit.change, format: v => `$${v.toLocaleString()}` },
+                { label: 'Рентабельность (Net Margin) (%)', v24: (sum.netProfit[2024]/sum.revenue[2024])*100, v25: (sum.netProfit[2025]/sum.revenue[2025])*100, change: ((sum.netProfit[2025]/sum.revenue[2025] - sum.netProfit[2024]/sum.revenue[2024])*100).toFixed(2) + " п.п.", format: v => `${v.toFixed(2)}%` },
+                { label: 'Средняя цена реализации ($/кВт·ч)', v24: sum.avgPrice[2024], v25: sum.avgPrice[2025], change: sum.avgPrice.change, format: v => `$${v.toFixed(4)}` },
+                { label: 'Средний LCOE ($/кВт·ч)', v24: sum.lcoe[2024], v25: sum.lcoe[2025], change: sum.lcoe.change, format: v => `$${v.toFixed(4)}` },
+            ];
+
+            const opMetrics = [
+                { label: 'Валовая генерация (кВт·ч)', v24: sum.generation[2024], v25: sum.generation[2025], change: sum.generation.change, format: v => v.toLocaleString() },
+                { label: 'Полезный отпуск в сеть (кВт·ч)', v24: sum.export[2024], v25: sum.export[2025], change: sum.export.change, format: v => v.toLocaleString() },
+                { label: 'Собственные нужды (%)', v24: sum.parasiticLoad[2024], v25: sum.parasiticLoad[2025], change: sum.parasiticLoad.change, format: v => `${v.toFixed(2)}%` },
+            ];
+
+            const TableRow = ({ item }) => {
+                const isPositive = item.change.includes('+');
+                const isNeutral = item.change.includes('0.00');
+                const isExpense = item.label.includes('затраты') || item.label.includes('LCOE') || item.label.includes('нужды');
+                let changeColor = isNeutral ? 'text-slate-500 bg-slate-100' : isPositive ? (isExpense ? 'text-red-700 bg-red-50' : 'text-emerald-700 bg-emerald-50') : (isExpense ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50');
+
+                return (
+                    <tr className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+                        <td className="p-5 font-semibold text-slate-700">{item.label}</td>
+                        <td className="p-5 text-right text-slate-600 font-medium text-lg">{item.format(item.v24)}</td>
+                        <td className="p-5 text-right font-bold text-slate-900 text-lg bg-slate-50/50">{item.format(item.v25)}</td>
+                        <td className="p-5 text-right">
+                            <span className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-bold ${changeColor}`}>
+                                {isPositive ? <ArrowUpRight className="mr-1.5 w-4 h-4" /> : (!isNeutral && <ArrowDownRight className="mr-1.5 w-4 h-4" />)}
+                                {item.change}
+                            </span>
+                        </td>
+                    </tr>
+                );
+            };
+
+            return (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="bg-slate-900 text-white p-8 rounded-2xl shadow-xl border border-slate-800 flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between">
+                        <div>
+                            <h2 className="text-3xl font-black mb-3">Консолидированный P&L Отчет</h2>
+                            <p className="text-slate-400 text-base max-w-2xl">Сводные финансовые и операционные результаты портфеля биогазовых активов за 2025 год с ретроспективным сравнением.</p>
+                        </div>
+                        <div className="flex gap-6">
+                            <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 min-w-[180px]">
+                                <p className="text-sm text-slate-400 mb-1 font-medium">Чистая прибыль '25</p>
+                                <p className="text-3xl font-black text-emerald-400 tracking-tight">${(sum.netProfit[2025]/1000).toFixed(1)}k</p>
+                            </div>
+                             <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 min-w-[180px]">
+                                <p className="text-sm text-slate-400 mb-1 font-medium">Маржинальность '25</p>
+                                <p className="text-3xl font-black text-blue-400 tracking-tight">{((sum.netProfit[2025]/sum.revenue[2025])*100).toFixed(1)}%</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">Финансовая динамика (Портфель)</h3>
+                            <p className="text-sm text-slate-500 mb-6 font-medium">Сравнение ключевых показателей эффективности (USD)</p>
+                            <div className="h-96 flex-1">
+                                <BarChart2425 data={portfolioChartData} />
+                            </div>
+                        </div>
+
+                        {/* ТАБЛИЦА ДЕТАЛИЗАЦИИ OPEX (Вместо графика, для подробности) */}
+                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                            <h3 className="text-xl font-bold text-slate-800 mb-1">Детализация OPEX 2025</h3>
+                            <div className="flex justify-between items-end mb-6 border-b border-slate-100 pb-4 mt-2">
+                                <p className="text-sm text-slate-400 font-medium">Общие затраты</p>
+                                <p className="text-2xl font-black text-slate-800">${sum.expenses[2025].toLocaleString()}</p>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="text-slate-500 font-medium border-b border-slate-200">
+                                        <tr>
+                                            <th className="pb-3 pl-1">Категория</th>
+                                            <th className="pb-3 text-right">Сумма</th>
+                                            <th className="pb-3 text-right pr-1">Доля</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {portfolioData.costStructure2025.map((item, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50">
+                                                <td className="py-3 pl-1 font-semibold text-slate-700 flex items-center gap-2">
+                                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{backgroundColor: item.color}}></div>
+                                                    {item.name}
+                                                </td>
+                                                <td className="py-3 text-right text-slate-900 font-bold">${(item.value/1000).toFixed(0)}k</td>
+                                                <td className="py-3 text-right pr-1 text-slate-500 font-medium">{((item.value / sum.expenses[2025]) * 100).toFixed(1)}%</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Финансовая таблица (Увеличенная) */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="p-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                            <div className="bg-emerald-100 p-2 rounded-lg">
+                                <DollarSign className="w-6 h-6 text-emerald-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800">Финансовые Макропоказатели</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left whitespace-nowrap">
+                                <thead className="bg-white text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider w-1/3">Показатель</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Факт 2024</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Факт 2025</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Динамика</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {finMetrics.map((item, i) => <TableRow key={i} item={item} />)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Операционная таблица (Производственные показатели) - ВОССТАНОВЛЕНО */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-8">
+                        <div className="p-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                                <Zap className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800">Сводные Производственные Показатели</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left whitespace-nowrap">
+                                <thead className="bg-white text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider w-1/3">Показатель</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Факт 2024</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Факт 2025</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Динамика</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {opMetrics.map((item, i) => <TableRow key={i} item={item} />)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Матрица вклада станций (НОВОЕ) */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="p-6 border-b border-slate-200 bg-slate-50 flex items-center gap-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                                <Factory className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800">Вклад Станций в Результат 2025</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left whitespace-nowrap">
+                                <thead className="bg-white text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider">Станция</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Выручка</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Прибыль</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">Маржинальность</th>
+                                        <th className="p-5 font-bold uppercase text-sm tracking-wider text-right">LCOE</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                                    {portfolioData.plants.map((p, i) => {
+                                        const margin = (p.metrics.profit[2025] / p.metrics.rev[2025]) * 100;
+                                        return (
+                                            <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-5 font-bold text-slate-800">{p.name}</td>
+                                                <td className="p-5 text-right">${p.metrics.rev[2025].toLocaleString()}</td>
+                                                <td className={`p-5 text-right font-bold ${p.metrics.profit[2025] > 0 ? 'text-emerald-600' : 'text-red-600'}`}>${p.metrics.profit[2025].toLocaleString()}</td>
+                                                <td className="p-5 text-right">
+                                                    <span className={`px-2 py-1 rounded text-sm ${margin > 20 ? 'bg-emerald-100 text-emerald-800' : margin > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-100 text-red-800'}`}>
+                                                        {margin.toFixed(1)}%
+                                                    </span>
+                                                </td>
+                                                <td className="p-5 text-right text-slate-500">${p.metrics.lcoe[2025].toFixed(4)}</td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Сводный обзор (Обновленный стиль)
+        const OverviewView = () => {
+          const profitData = portfolioData.plants.map(p => ({
+            name: p.name,
+            profit2024: p.metrics.profit[2024],
+            profit2025: p.metrics.profit[2025]
+          }));
+
+          const KPICard = ({ title, value2024, value2025, unit, trend, formatFn }) => {
+              const isPositive = trend.includes('+');
+              const isNeutral = trend.includes('0.00');
+              const displayValue = (val) => formatFn ? formatFn(val) : val.toLocaleString('ru-RU');
+
+              return (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg transition-all transform hover:-translate-y-1">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-base font-bold text-slate-500 uppercase tracking-wide">{title}</h3>
+                    {unit === 'USD' ? <DollarSign className="text-slate-400 w-5 h-5" /> : <Activity className="text-slate-400 w-5 h-5" />}
+                  </div>
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <span className="text-4xl font-black text-slate-800 tracking-tight">{displayValue(value2025)}</span>
+                    <span className="text-base font-medium text-slate-400">{unit !== 'USD' && unit}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm font-medium mt-4 pt-4 border-t border-slate-100">
+                    <span className="text-slate-400">2024: {displayValue(value2024)}</span>
+                    <span className={`flex items-center px-2 py-1 rounded-md ${isNeutral ? 'bg-slate-100 text-slate-500' : isPositive ? (title.includes('LCOE') ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700') : (title.includes('LCOE') ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}`}>
+                      {isPositive ? <ArrowUpRight className="mr-1 w-4 h-4" /> : <ArrowDownRight className="mr-1 w-4 h-4" />}
+                      {trend}
+                    </span>
+                  </div>
+                </div>
+              );
+          };
+
+          return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <KPICard title="Чистая Прибыль" value2024={portfolioData.summary.netProfit[2024]} value2025={portfolioData.summary.netProfit[2025]} unit="USD" trend={portfolioData.summary.netProfit.change} formatFn={(v) => `$${v.toLocaleString()}`} />
+                <KPICard title="Генерация" value2024={portfolioData.summary.generation[2024]} value2025={portfolioData.summary.generation[2025]} unit="кВт·ч" trend={portfolioData.summary.generation.change} />
+                <KPICard title="Выручка" value2024={portfolioData.summary.revenue[2024]} value2025={portfolioData.summary.revenue[2025]} unit="USD" trend={portfolioData.summary.revenue.change} formatFn={(v) => `$${v.toLocaleString()}`} />
+                <KPICard title="Средняя LCOE" value2024={portfolioData.summary.lcoe[2024]} value2025={portfolioData.summary.lcoe[2025]} unit="$ / кВт·ч" trend={portfolioData.summary.lcoe.change} formatFn={(v) => `$${v.toFixed(4)}`} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Сравнительная прибыльность станций</h3>
+                  <p className="text-sm text-slate-500 mb-6 font-medium">Вклад каждой компании в общий результат (USD)</p>
+                  <div className="h-96 flex-1">
+                    <ProfitabilityChart data={profitData} />
+                  </div>
+                </div>
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-center">
+                    <h3 className="text-xl font-bold text-slate-800 mb-6">Основные драйверы года</h3>
+                    <div className="space-y-6">
+                        <div className="bg-emerald-50 p-6 rounded-xl border border-emerald-100 shadow-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            <TrendingUp className="text-emerald-600 w-6 h-6" />
+                            <h4 className="font-bold text-lg text-emerald-900">Рост маржинальности</h4>
+                          </div>
+                          <p className="text-sm text-emerald-800 font-medium leading-relaxed">Рост выручки на 30% опережает рост генерации. Эффект роста тарифов.</p>
+                        </div>
+                        <div className="bg-amber-50 p-6 rounded-xl border border-amber-100 shadow-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Truck className="text-amber-600 w-6 h-6" />
+                            <h4 className="font-bold text-lg text-amber-900">Логистический Шок</h4>
+                          </div>
+                          <p className="text-sm text-amber-800 font-medium leading-relaxed">Расходы на транспорт выросли на 64.5% из-за расширения радиуса сбора.</p>
+                        </div>
+                        <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Zap className="text-blue-600 w-6 h-6" />
+                            <h4 className="font-bold text-lg text-blue-900">Энергоэффективность</h4>
+                          </div>
+                          <p className="text-sm text-blue-800 font-medium leading-relaxed">Собственные нужды снизились до 9.72%, увеличив полезный отпуск в сеть.</p>
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // 3. Детализация по станции (Обновленный стиль)
+        const PlantDetailView = ({ plant }) => {
+          const chartData = [
+            { name: 'Выручка', '2024': plant.metrics.rev[2024], '2025': plant.metrics.rev[2025] },
+            { name: 'Расходы', '2024': plant.metrics.exp[2024], '2025': plant.metrics.exp[2025] },
+            { name: 'Прибыль', '2024': plant.metrics.profit[2024], '2025': plant.metrics.profit[2025] },
+          ];
+
+          return (
+            <div className="space-y-8 animate-in fade-in duration-500">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50 p-8 rounded-2xl border border-slate-200 shadow-inner">
+                <div>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-4xl font-black text-slate-800 tracking-tight">{plant.name}</h2>
+                    <span className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wide shadow-sm border ${
+                      plant.status === 'success' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 
+                      plant.status === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-200' : 
+                      'bg-red-100 text-red-800 border-red-200'
+                    }`}>
+                      {plant.tagline}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 mt-2 text-lg font-medium">Детальный анализ эффективности (2024-2025)</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p className="text-sm text-slate-500 font-bold mb-1 uppercase tracking-wider">LCOE 2025</p>
+                    <p className="text-3xl font-black text-slate-800">${plant.metrics.lcoe[2025].toFixed(4)}</p>
+                  </div>
+                  <div className="bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
+                    <p className="text-sm text-slate-500 font-bold mb-1 uppercase tracking-wider">Генерация 2025</p>
+                    <p className="text-3xl font-black text-slate-800">{(plant.metrics.gen[2025] / 1000000).toFixed(2)} ГВт</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Финансовая динамика</h3>
+                  <p className="text-sm text-slate-500 mb-6 font-medium">Сравнение основных показателей (USD)</p>
+                  <div className="h-96 flex-1">
+                    <BarChart2425 data={chartData} />
+                  </div>
+                </div>
+
+                <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                  <h3 className="text-xl font-bold text-slate-800 mb-1">Структура OPEX 2025</h3>
+                  <div className="flex justify-between items-end mb-6 border-b border-slate-100 pb-4 mt-2">
+                      <p className="text-sm text-slate-400 font-bold uppercase">Суммарные затраты</p>
+                      <p className="text-2xl font-black text-slate-800">${plant.metrics.exp[2025].toLocaleString()}</p>
+                  </div>
+                  <div className="flex-1 min-h-[300px] relative">
+                    <CostStructureBars data={plant.costStructure2025} totalValue={plant.metrics.exp[2025]} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                <h3 className="text-xl font-bold text-slate-800 mb-6">Ключевые выводы и инсайты</h3>
+                <div className="space-y-6 flex-1">
+                  {plant.insights.map((insight, idx) => (
+                    <div key={idx} className="flex gap-5 items-start p-6 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white hover:shadow-md transition-all">
+                      <div className="mt-0.5 bg-white p-2 rounded-lg shadow-sm border border-slate-200 flex-shrink-0">
+                         {plant.status === 'danger' ? <AlertTriangle className="text-red-500 w-6 h-6" /> : 
+                          plant.status === 'warning' ? <Wrench className="text-amber-500 w-6 h-6" /> :
+                          <TrendingUp className="text-emerald-500 w-6 h-6" />
+                         }
+                      </div>
+                      <p className="text-slate-700 text-base leading-relaxed font-medium">{insight}</p>
+                    </div>
+                  ))}
+                </div>
+                  
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                  <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Драйверы изменений (Г/Г):</h4>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-base">
+                    <div className="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-slate-500 font-semibold">Генерация</span>
+                      <span className={plant.metrics.gen[2025] > plant.metrics.gen[2024] ? 'text-emerald-600 font-black' : 'text-red-600 font-black'}>
+                        {((plant.metrics.gen[2025] - plant.metrics.gen[2024]) / plant.metrics.gen[2024] * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-slate-500 font-semibold">Выручка</span>
+                      <span className={plant.metrics.rev[2025] > plant.metrics.rev[2024] ? 'text-emerald-600 font-black' : 'text-red-600 font-black'}>
+                        {((plant.metrics.rev[2025] - plant.metrics.rev[2024]) / plant.metrics.rev[2024] * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-slate-500 font-semibold">Затраты</span>
+                      <span className={plant.metrics.exp[2025] < plant.metrics.exp[2024] ? 'text-emerald-600 font-black' : 'text-red-600 font-black'}>
+                        {((plant.metrics.exp[2025] - plant.metrics.exp[2024]) / plant.metrics.exp[2024] * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                      <span className="text-slate-500 font-semibold">LCOE</span>
+                      <span className={plant.metrics.lcoe[2025] < plant.metrics.lcoe[2024] ? 'text-emerald-600 font-black' : 'text-red-600 font-black'}>
+                        ${plant.metrics.lcoe[2025].toFixed(4)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // --- ГЛАВНЫЙ КОНТЕЙНЕР ---
+        class ErrorBoundary extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = { hasError: false, error: null };
+            }
+            static getDerivedStateFromError(error) { return { hasError: true, error }; }
+            render() {
+                if (this.state.hasError) {
+                    return (
+                        <div className="p-8 max-w-2xl mx-auto mt-10 bg-red-50 border border-red-200 rounded-xl">
+                            <h2 className="text-xl font-bold text-red-700 mb-4">Ошибка компонента</h2>
+                            <pre className="bg-white p-4 rounded text-sm text-red-600 overflow-auto border border-red-100">{this.state.error.toString()}</pre>
+                        </div>
+                    );
+                }
+                return this.props.children;
+            }
+        }
+
+        const App = () => {
+          const [activeTab, setActiveTab] = useState('consolidated');
+          const activePlant = portfolioData.plants.find(p => p.id === activeTab);
+
+          return (
+            <div className="min-h-screen bg-slate-100 flex font-sans text-slate-900 text-lg">
+              {/* Сайдбар */}
+              <aside className="w-80 bg-slate-900 text-slate-300 flex flex-col fixed h-full z-10 hidden md:flex shadow-2xl">
+                <div className="p-8 border-b border-slate-800 bg-slate-950">
+                  <div className="flex items-center gap-4 text-white font-black text-2xl tracking-tight">
+                    <LayoutDashboard className="text-emerald-500 w-8 h-8" />
+                    <span>BioGas Analytics</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-3 font-semibold tracking-wide uppercase">Отчет 2024-2025</p>
+                </div>
+                
+                <nav className="flex-1 overflow-y-auto py-8 px-6 space-y-2 custom-scrollbar">
+                  
+                  {/* Новые табы обзора */}
+                  <div className="space-y-3 mb-8 border-b border-slate-800 pb-8">
+                      <button 
+                        onClick={() => setActiveTab('consolidated')}
+                        className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all font-bold text-base ${activeTab === 'consolidated' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50' : 'hover:bg-slate-800 text-slate-400'}`}
+                      >
+                        <FileText className="w-5 h-5" />
+                        <span>Консолидированный итог</span>
+                      </button>
+
+                      <button 
+                        onClick={() => setActiveTab('overview')}
+                        className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl transition-all font-bold text-base ${activeTab === 'overview' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/50' : 'hover:bg-slate-800 text-slate-400'}`}
+                      >
+                        <Activity className="w-5 h-5" />
+                        <span>Графики (Портфель)</span>
+                      </button>
+                  </div>
+
+                  <div className="px-5 text-xs font-black uppercase tracking-widest text-slate-500 mb-3">
+                    Аналитика станций
+                  </div>
+
+                  <div className="space-y-2">
+                      {portfolioData.plants.map(plant => (
+                        <button
+                          key={plant.id}
+                          onClick={() => setActiveTab(plant.id)}
+                          className={`w-full flex items-center justify-between px-5 py-3 rounded-xl transition-all group font-semibold text-base ${activeTab === plant.id ? 'bg-slate-800 text-white shadow-inner' : 'hover:bg-slate-800 hover:text-white text-slate-400'}`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <Factory className={`w-5 h-5 ${activeTab === plant.id ? 'text-emerald-400' : 'group-hover:text-slate-300'}`} />
+                            <span>{plant.name}</span>
+                          </div>
+                          {plant.metrics.profit[2025] < 0 && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+                          )}
+                        </button>
+                      ))}
+                  </div>
+                </nav>
+              </aside>
+
+              {/* Основной контент */}
+              <main className="flex-1 md:ml-80 p-6 md:p-10 xl:p-14">
+                <header className="flex flex-col md:flex-row md:justify-between md:items-end mb-10 gap-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                  <div>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                      {activeTab === 'consolidated' ? 'Итого по всем компаниям' : activeTab === 'overview' ? 'Анализ Портфеля' : `Комплекс: ${activePlant?.name}`}
+                    </h1>
+                    <p className="text-base text-slate-500 mt-3 font-semibold">
+                      Операционная и финансовая эффективность на базе отчета
+                    </p>
+                  </div>
+                  <div className="text-left md:text-right bg-slate-50 px-6 py-3 rounded-xl border border-slate-100">
+                    <p className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-1">Последнее обновление</p>
+                    <div className="text-base font-bold text-slate-700 flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        11 Февраля 2026
+                    </div>
+                  </div>
+                </header>
+
+                {/* Мобильная навигация */}
+                <div className="md:hidden mb-8 relative">
+                  <select 
+                    value={activeTab} 
+                    onChange={(e) => setActiveTab(e.target.value)}
+                    className="w-full p-5 bg-white border border-slate-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-bold text-lg text-slate-700 appearance-none"
+                  >
+                    <option value="consolidated">📑 Консолидированный итог</option>
+                    <option value="overview">📊 Графики (Портфель)</option>
+                    <optgroup label="Комплексы">
+                      {portfolioData.plants.map(p => (
+                        <option key={p.id} value={p.id}>{p.metrics.profit[2025] < 0 ? '🔴' : '🟢'} {p.name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-6 text-slate-500">▼</div>
+                </div>
+
+                <ErrorBoundary>
+                    {activeTab === 'consolidated' ? <ConsolidatedView /> : activeTab === 'overview' ? <OverviewView /> : <PlantDetailView plant={activePlant} />}
+                </ErrorBoundary>
+                
+                <footer className="mt-16 border-t border-slate-200 pt-10 pb-6 flex justify-between items-center text-sm text-slate-400 font-semibold">
+                  <p>© 2026 Biogas Analytics Group.</p>
+                  <p>Конфиденциальный отчет</p>
+                </footer>
+              </main>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
